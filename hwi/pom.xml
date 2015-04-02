@@ -24,7 +24,7 @@
   </parent>
 
   <artifactId>hive-hwi</artifactId>
-  <packaging>jar</packaging>
+  <packaging>war</packaging>
   <name>Hive HWI</name>
 
   <properties>
@@ -138,6 +138,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
+          <attachClasses>true</attachClasses>
           <warSourceDirectory>${basedir}/web</warSourceDirectory>
           <packagingExcludes>WEB-INF/lib/*</packagingExcludes>
         </configuration>

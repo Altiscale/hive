@@ -186,6 +186,13 @@
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-hwi</artifactId>
       <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-hwi</artifactId>
+      <version>${project.version}</version>
+      <classifier>classes</classifier>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
