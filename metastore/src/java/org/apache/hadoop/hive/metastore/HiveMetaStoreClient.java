@@ -27,9 +27,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +63,8 @@ import org.apache.hadoop.hive.metastore.txn.TxnUtils;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.hive.shims.Utils;
 import org.apache.hadoop.hive.thrift.HadoopThriftAuthBridge;
+import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.thrift.TApplicationException;
@@ -81,6 +81,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import java.util.Collections;
 
 /**
  * Hive Metastore Client.
@@ -92,15 +93,6 @@ import com.google.common.collect.Lists;
 @Public
 @Unstable
 public class HiveMetaStoreClient implements IMetaStoreClient {
-  /**
-   * Capabilities of the current client. If this client talks to a MetaStore server in a manner
-   * implying the usage of some expanded features that require client-side support that this client
-   * doesn't have (e.g. a getting a table of a new type), it will get back failures when the
-   * capability checking is enabled (the default).
-   */
-  public final static ClientCapabilities VERSION = null; // No capabilities.
-  public final static ClientCapabilities TEST_VERSION = new ClientCapabilities(
-      Lists.newArrayList(ClientCapability.TEST_CAPABILITY)); // Test capability for tests.
 
   ThriftHiveMetastore.Iface client = null;
   private TTransport transport = null;
@@ -121,7 +113,6 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   // for thrift connects
   private int retries = 5;
   private long retryDelaySeconds = 0;
-  private final ClientCapabilities version;
 
   static final protected Logger LOG = LoggerFactory.getLogger("hive.metastore");
 
@@ -139,11 +130,8 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
     this.hookLoader = hookLoader;
     if (conf == null) {
       conf = new HiveConf(HiveMetaStoreClient.class);
-      this.conf = conf;
-    } else {
-      this.conf = new HiveConf(conf);
     }
-    version = HiveConf.getBoolVar(conf, ConfVars.HIVE_IN_TEST) ? TEST_VERSION : VERSION;
+    this.conf = conf;
     filterHook = loadFilterHooks();
     fileMetadataBatchSize = HiveConf.getIntVar(
         conf, HiveConf.ConfVars.METASTORE_BATCH_RETRIEVE_OBJECTS_MAX);
@@ -158,10 +146,10 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
       // instantiate the metastore server handler directly instead of connecting
       // through the network
       if (conf.getBoolVar(ConfVars.METASTORE_FASTPATH)) {
-        client = new HiveMetaStore.HMSHandler("hive client", this.conf, true);
+        client = new HiveMetaStore.HMSHandler("hive client", conf, true);
         fastpath = true;
       } else {
-        client = HiveMetaStore.newRetryingHMSHandler("hive client", this.conf, true);
+        client = HiveMetaStore.newRetryingHMSHandler("hive client", conf, true);
       }
       isConnected = true;
       snapshotActiveConf();
@@ -208,41 +196,6 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
       throw new MetaException("MetaStoreURIs not found in conf file");
     }
 
-    //If HADOOP_PROXY_USER is set in env or property,
-    //then need to create metastore client that proxies as that user.
-    String HADOOP_PROXY_USER = "HADOOP_PROXY_USER";
-    String proxyUser = System.getenv(HADOOP_PROXY_USER);
-    if (proxyUser == null) {
-      proxyUser = System.getProperty(HADOOP_PROXY_USER);
-    }
-    //if HADOOP_PROXY_USER is set, create DelegationToken using real user
-    if(proxyUser != null) {
-      LOG.info(HADOOP_PROXY_USER + " is set. Using delegation "
-          + "token for HiveMetaStore connection.");
-      try {
-        UserGroupInformation.getLoginUser().getRealUser().doAs(
-            new PrivilegedExceptionAction<Void>() {
-              @Override
-              public Void run() throws Exception {
-                open();
-                return null;
-              }
-            });
-        String delegationTokenPropString = "DelegationTokenForHiveMetaStoreServer";
-        String delegationTokenStr = getDelegationToken(proxyUser, proxyUser);
-        Utils.setTokenStr(UserGroupInformation.getCurrentUser(), delegationTokenStr,
-            delegationTokenPropString);
-        this.conf.setVar(ConfVars.METASTORE_TOKEN_SIGNATURE, delegationTokenPropString);
-        close();
-      } catch (Exception e) {
-        LOG.error("Error while setting delegation token for " + proxyUser, e);
-        if(e instanceof MetaException) {
-          throw (MetaException)e;
-        } else {
-          throw new MetaException(e.getMessage());
-        }
-      }
-    }
     // finally open the store
     open();
   }
@@ -395,18 +348,44 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   private void open() throws MetaException {
     isConnected = false;
     TTransportException tte = null;
-    boolean useSSL = conf.getBoolVar(ConfVars.HIVE_METASTORE_USE_SSL);
     boolean useSasl = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
     boolean useFramedTransport = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_FRAMED_TRANSPORT);
     boolean useCompactProtocol = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_COMPACT_PROTOCOL);
     int clientSocketTimeout = (int) conf.getTimeVar(
         ConfVars.METASTORE_CLIENT_SOCKET_TIMEOUT, TimeUnit.MILLISECONDS);
 
+    Socket socket = null;
+    String hiveHost = null;
+    try {
+      UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
+      if (loginUser != null && loginUser.hasKerberosCredentials()) {
+        hiveHost = SecurityUtil.getHostFromPrincipal(loginUser.getUserName());
+      }
+    } catch (IOException ioe) {
+       LOG.error("Couldn't create client transport", ioe);
+       throw new MetaException(ioe.toString());
+    }
+
     for (int attempt = 0; !isConnected && attempt < retries; ++attempt) {
       for (URI store : metastoreUris) {
         LOG.info("Trying to connect to metastore with URI " + store);
 
         try {
+          try {
+            TSocket tsocket = new TSocket(store.getHost(), store.getPort(), 1000 * clientSocketTimeout);
+            if (hiveHost != null && !hiveHost.isEmpty())  {
+              socket = tsocket.getSocket();
+              InetAddress localAddr = NetUtils.getLocalInetAddress(hiveHost);
+              if (localAddr != null)
+                socket.bind(new InetSocketAddress(localAddr, 0));
+            }
+            transport = tsocket;
+          } catch (IOException ioe) {
+              LOG.error("Couldn't create client transport to HiveMetastore("
+                + store.getHost() + ":" + store.getPort() + ")", ioe);
+              throw new MetaException(ioe.toString());
+          }
+
           if (useSasl) {
             // Wrap thrift connection with SASL for secure connection.
             try {
@@ -421,8 +400,6 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
               String tokenSig = conf.getVar(ConfVars.METASTORE_TOKEN_SIGNATURE);
               // tokenSig could be null
               tokenStrForm = Utils.getTokenStrForm(tokenSig);
-              transport = new TSocket(store.getHost(), store.getPort(), clientSocketTimeout);
-
               if(tokenStrForm != null) {
                 // authenticate using delegation tokens via the "DIGEST" mechanism
                 transport = authBridge.createClientTransport(null, store.getHost(),
@@ -439,33 +416,6 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
               LOG.error("Couldn't create client transport", ioe);
               throw new MetaException(ioe.toString());
             }
-          } else {
-            if (useSSL) {
-              try {
-                String trustStorePath = conf.getVar(ConfVars.HIVE_METASTORE_SSL_TRUSTSTORE_PATH).trim();
-                if (trustStorePath.isEmpty()) {
-                  throw new IllegalArgumentException(ConfVars.HIVE_METASTORE_SSL_TRUSTSTORE_PATH.varname
-                      + " Not configured for SSL connection");
-                }
-                String trustStorePassword = ShimLoader.getHadoopShims().getPassword(conf,
-                    HiveConf.ConfVars.HIVE_METASTORE_SSL_TRUSTSTORE_PASSWORD.varname);
-
-                // Create an SSL socket and connect
-                transport = HiveAuthUtils.getSSLSocket(store.getHost(), store.getPort(), clientSocketTimeout, trustStorePath, trustStorePassword );
-                LOG.info("Opened an SSL connection to metastore, current connections: " + connCount.incrementAndGet());
-              } catch(IOException e) {
-                throw new IllegalArgumentException(e);
-              } catch(TTransportException e) {
-                tte = e;
-                throw new MetaException(e.toString());
-              }
-            } else {
-              transport = new TSocket(store.getHost(), store.getPort(), clientSocketTimeout);
-            }
-
-            if (useFramedTransport) {
-              transport = new TFramedTransport(transport);
-            }
           }
 
           final TProtocol protocol;
@@ -476,10 +426,8 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
           }
           client = new ThriftHiveMetastore.Client(protocol);
           try {
-            if (!transport.isOpen()) {
-              transport.open();
-              LOG.info("Opened a connection to metastore, current connections: " + connCount.incrementAndGet());
-            }
+            transport.open();
+            LOG.info("Opened a connection to metastore, current connections: " + connCount.incrementAndGet());
             isConnected = true;
           } catch (TTransportException e) {
             tte = e;
@@ -541,7 +489,6 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
     }
   }
 
-  @Override
   public String getTokenStrForm() throws IOException {
     return tokenStrForm;
    }
@@ -1094,7 +1041,7 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
     try {
       drop_table_with_environment_context(dbname, name, deleteData, envContext);
       if (hook != null) {
-        hook.commitDropTable(tbl, deleteData || (envContext != null && "TRUE".equals(envContext.getProperties().get("ifPurge"))));
+        hook.commitDropTable(tbl, deleteData);
       }
       success=true;
     } catch (NoSuchObjectException e) {
@@ -1339,9 +1286,7 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   @Override
   public Table getTable(String dbname, String name) throws MetaException,
       TException, NoSuchObjectException {
-    GetTableRequest req = new GetTableRequest(dbname, name);
-    req.setCapabilities(version);
-    Table t = client.get_table_req(req).getTable();
+    Table t = client.get_table(dbname, name);
     return fastpath ? t : deepCopy(filterHook.filterTable(t));
   }
 
@@ -1358,10 +1303,7 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   @Override
   public List<Table> getTableObjectsByName(String dbName, List<String> tableNames)
       throws MetaException, InvalidOperationException, UnknownDBException, TException {
-    GetTablesRequest req = new GetTablesRequest(dbName);
-    req.setTblNames(tableNames);
-    req.setCapabilities(version);
-    List<Table> tabs = client.get_table_objects_by_name_req(req).getTables();
+    List<Table> tabs = client.get_table_objects_by_name(dbName, tableNames);
     return fastpath ? tabs : deepCopyTables(filterHook.filterTables(tabs));
   }
 
@@ -1453,9 +1395,7 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
   public boolean tableExists(String databaseName, String tableName) throws MetaException,
       TException, UnknownDBException {
     try {
-      GetTableRequest req = new GetTableRequest(databaseName, tableName);
-      req.setCapabilities(version);
-      return filterHook.filterTable(client.get_table_req(req).getTable()) != null;
+      return filterHook.filterTable(client.get_table(databaseName, tableName)) != null;
     } catch (NoSuchObjectException e) {
       return false;
     }
@@ -2209,16 +2149,23 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
     cr.setType(type);
     client.compact(cr);
   }
-  @Deprecated
+
+
   @Override
   public void compact(String dbname, String tableName, String partitionName, CompactionType type,
                       Map<String, String> tblproperties) throws TException {
-    compact2(dbname, tableName, partitionName, type, tblproperties);
+    CompactionRequest cr = new CompactionRequest();
+    if (dbname == null) cr.setDbname(DEFAULT_DATABASE_NAME);
+    else cr.setDbname(dbname);
+    cr.setTablename(tableName);
+    if (partitionName != null) cr.setPartitionname(partitionName);
+    cr.setType(type);
+    cr.setProperties(tblproperties);
+    client.compact(cr);
   }
-
   @Override
   public CompactionResponse compact2(String dbname, String tableName, String partitionName, CompactionType type,
-                      Map<String, String> tblproperties) throws TException {
+                                     Map<String, String> tblproperties) throws TException {
     CompactionRequest cr = new CompactionRequest();
     if (dbname == null) cr.setDbname(DEFAULT_DATABASE_NAME);
     else cr.setDbname(dbname);
