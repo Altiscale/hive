@@ -34,12 +34,20 @@ public class TestJdbWithCustomAuthWithKerberos {
   private static final Logger LOG = LoggerFactory.getLogger(TestSSL.class);
   private static Integer KERBEROS_CUSTOM_PORT;
   private static final String HS2_BINARY_MODE = "binary";
+  private static final String KEY_STORE_NAME = "keystore.jks";
+  private static final String TRUST_STORE_NAME = "truststore.jks";
+  private static final String KEY_STORE_PASSWORD = "HiveJdbc";
+  private static final String JAVA_TRUST_STORE_PROP = "javax.net.ssl.trustStore";
+  private static final String JAVA_TRUST_STORE_PASS_PROP = "javax.net.ssl.trustStorePassword";
 
   private MiniHiveKdc miniHiveKdc;
   private MiniHS2 miniHS2 = null;
   private static HiveConf hiveConf = new HiveConf();
   private Connection hs2Conn = null;
   private Map<String, String> confOverlay;
+  private String dataFileDir = hiveConf.get("test.data.files");
+  private final String SSL_CONN_PARAMS = ";ssl=true;sslTrustStore=" + URLEncoder.encode(dataFileDir + File.separator +
+      TRUST_STORE_NAME) + ";trustStorePassword=" + KEY_STORE_PASSWORD;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -64,6 +72,8 @@ public class TestJdbWithCustomAuthWithKerberos {
     if (miniHS2 != null && miniHS2.isStarted()) {
       miniHS2.stop();
     }
+    System.clearProperty(JAVA_TRUST_STORE_PROP);
+    System.clearProperty(JAVA_TRUST_STORE_PASS_PROP);
   }
 
   @Test
@@ -100,6 +110,31 @@ public class TestJdbWithCustomAuthWithKerberos {
     hs2Conn.close();
   }
 
+  @Test
+  public void testCustomAuthenticationOverSSLWithKerberos() throws Exception {
+    setCustomAuthWithKrbOverlay();
+    setCustomAuthOverSslConfWithKrbOverlay(confOverlay);
+    startMiniHS2();
+
+    // JDBC connection with ID/PASSWD over SSL with Kerberos (Custom class)
+    String url = "jdbc:hive2://" + miniHS2.getHost() + ":" + KERBEROS_CUSTOM_PORT + "/default"
+      + ";ssl=true;sslTrustStore=" + dataFileDir + File.separator + TRUST_STORE_NAME
+      + ";trustStorePassword=" + KEY_STORE_PASSWORD;
+
+    // wrong ID/PASSWD
+    try {
+      hs2Conn = DriverManager.getConnection(url, "wronguser", "pwd");
+    } catch(SQLException e) {
+      assertNotNull(e.getMessage());
+      assertTrue(e.getMessage(), e.getMessage().contains("Peer indicated failure: Error validating the login"));
+    }
+
+    // success ID/PASSWD
+    hs2Conn = DriverManager.getConnection(url, "hiveuser", "hive");
+    hs2Conn.close();
+
+    System.out.println(">>> PASSED testCustomAuthenticationOverSSLWithKerberos");
+  }
 
   public static class SimpleCustomAuthWithKerberosProviderImpl implements KrbCustomAuthenticationProvider {
 
@@ -135,6 +170,15 @@ public class TestJdbWithCustomAuthWithKerberos {
       "3");
     confOverlay.put(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MAX_WORKER_THREADS.varname,
       "5");
+  }
+
+  private void setCustomAuthOverSslConfWithKrbOverlay(Map<String, String> confOverlay) {
+    // Custom class over SSL with Kerberos
+    confOverlay.put(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_USED.varname, "true");
+    confOverlay.put(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PATH.varname,
+        dataFileDir + File.separator +  KEY_STORE_NAME);
+    confOverlay.put(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PASSWORD.varname,
+        KEY_STORE_PASSWORD);
   }
 
   private void startMiniHS2() {

@@ -1971,6 +1971,12 @@ public class HiveConf extends Configuration {
         "Minimum number of custom authentication class worker threads with Kerberos"),
     HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MAX_WORKER_THREADS("hive.server2.kerberos.custom.authentication.max.worker.threads", 500,
         "Maximum number of custom authentication class worker threads with Kerberos"),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_USED("hive.server2.kerberos.custom.authentication.SSL.used", false,
+         "Set this to true for using SSL encryption for SASL(PLAIN) with Kerberos in HiveServer2."),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PATH("hive.server2.kerberos.custom.authentication.ssl.keystore.path", "",
+         "SSL certificate keystore location for using SSL encryption for SASL(PLAIN) with Kerberos."),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PASSWORD("hive.server2.kerberos.custom.authentication.ssl.keystore.password", "",
+         "SSL certificate keystore password for using SSL encryption for SASL(PLAIN) with Kerberos."),
 
     // If this is set all move tasks at the end of a multi-insert query will only begin once all
     // outputs are ready
