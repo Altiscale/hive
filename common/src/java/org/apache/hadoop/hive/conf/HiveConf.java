@@ -1962,15 +1962,21 @@ public class HiveConf extends Configuration {
         "'hive.server2.kerberos.custom.authentication.used' is set to 'true'.\n" +
         "Provided class must be a proper implementation of the interface\n" +
         "org.apache.hadoop.hive.thrift.KrbCustomAuthenticationProvider.\n" +
-        "Hiveserver2 will call its Authenticate(user, passed) method to authenticate requests.\n" +
+        "Hiveserver2 will call its authenticate(user, passed) method to authenticate requests.\n" +
         "The implementation may optionally implement Hadoop's\n" +
         "org.apache.hadoop.conf.Configurable class to grab Hive's Configuration object."),
     HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_PORT("hive.server2.kerberos.custom.authentication.port", 10010,
-        "Port number of HiveServer2 for using custom authenticaiton class with Kerberos."),
+        "Port number of HiveServer2 for using custom authentication class with Kerberos."),
     HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MIN_WORKER_THREADS("hive.server2.kerberos.custom.authentication.min.worker.threads", 5,
         "Minimum number of custom authentication class worker threads with Kerberos"),
     HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MAX_WORKER_THREADS("hive.server2.kerberos.custom.authentication.max.worker.threads", 500,
         "Maximum number of custom authentication class worker threads with Kerberos"),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_USED("hive.server2.kerberos.custom.authentication.SSL.used", false,
+         "Set this to true for using SSL encryption for SASL(PLAIN) with Kerberos in HiveServer2."),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PATH("hive.server2.kerberos.custom.authentication.ssl.keystore.path", "",
+         "SSL certificate keystore location for using SSL encryption for SASL(PLAIN) with Kerberos."),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PASSWORD("hive.server2.kerberos.custom.authentication.ssl.keystore.password", "",
+         "SSL certificate keystore password for using SSL encryption for SASL(PLAIN) with Kerberos."),
 
     // If this is set all move tasks at the end of a multi-insert query will only begin once all
     // outputs are ready
