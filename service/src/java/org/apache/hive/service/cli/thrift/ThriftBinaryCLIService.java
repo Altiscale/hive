@@ -41,7 +41,7 @@ import org.apache.thrift.transport.TTransportFactory;
 
 
 public class ThriftBinaryCLIService extends ThriftCLIService {
-  TServer customKrbServer;
+  static TServer customKrbServer;
 
   public ThriftBinaryCLIService(CLIService cliService) {
     super(cliService, ThriftBinaryCLIService.class.getSimpleName());
@@ -50,7 +50,7 @@ public class ThriftBinaryCLIService extends ThriftCLIService {
   @Override
   public synchronized void stop() {
     if (customKrbServer != null) {
-        customKrbServer.stop();
+      customKrbServer.stop();
       LOG.info("Thrift SASL(PLAIN) over SSL with Kerberos server has stopped");
     }
     super.stop();
@@ -119,8 +119,7 @@ public class ThriftBinaryCLIService extends ThriftCLIService {
           @Override
           public void run() {
             try {
-              startCustomWithKerberos(hiveConf,
-                svc, hiveHost, customKrbServer);
+              startCustomWithKerberos(hiveConf, svc, hiveHost);
             } catch (Throwable t) {
               LOG.error(
                 "Failure ThriftBinaryCLIService custom authentication with Kerberos listening on "
@@ -142,61 +141,77 @@ public class ThriftBinaryCLIService extends ThriftCLIService {
 
   // Custom authentication class with Kerberos thread
   private static void startCustomWithKerberos(
-   final HiveConf hiveConf,
-   final ThriftCLIService service,
-   final String hiveHost,
-   TServer customKrbServer) throws Exception {
+    final HiveConf hiveConf,
+    ThriftCLIService service,
+    final String hiveHost) throws Exception {
 
-   try {
-     int minThreads = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MIN_WORKER_THREADS);
-     int maxThreads = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MAX_WORKER_THREADS);
+    try {
+      int minThreads = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MIN_WORKER_THREADS);
+      int maxThreads = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MAX_WORKER_THREADS);
 
-     // custom authenticatino class with Kerberos Server thread pool
-     String threadPoolName = "HiveServer2-custom-with-Krb-Handler-Pool";
-     ExecutorService executorService = new ThreadPoolExecutor(minThreads, maxThreads,
+      // custom authentication class with Kerberos Server thread pool
+      String threadPoolName = "HiveServer2-custom-with-Krb-Handler-Pool";
+      ExecutorService executorService = new ThreadPoolExecutor(minThreads, maxThreads,
          service.workerKeepAliveTime, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
          new ThreadFactoryWithGarbageCleanup(threadPoolName));
 
-     int customPortNum;
-     String portString = System.getenv("HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_PORT");
-     if (portString != null) {
-       customPortNum = Integer.valueOf(portString);
-     } else {
-       customPortNum = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_PORT);
-     }
+      int customPortNum;
+      String portString = System.getenv("HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_PORT");
+      if (portString != null) {
+        customPortNum = Integer.valueOf(portString);
+      } else {
+        customPortNum = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_PORT);
+      }
 
-     HiveAuthFactory hiveAuthFactory = new HiveAuthFactory(hiveConf);
-     TTransportFactory transportFactory = hiveAuthFactory.getAuthPlainTransFactory();
-     TProcessorFactory processorFactory = hiveAuthFactory.getAuthProcFactory(service);
-     TServerSocket customKrbSocket = null;
+      HiveAuthFactory hiveAuthFactory = new HiveAuthFactory(hiveConf);
+      TTransportFactory transportFactory = hiveAuthFactory.getAuthPlainTransFactory();
+      TProcessorFactory processorFactory = hiveAuthFactory.getAuthProcFactory(service);
+      TServerSocket customKrbSocket = null;
 
-     customKrbSocket = HiveAuthFactory.getServerSocket(hiveHost, customPortNum);
+      if (!hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_USED)) {
+        customKrbSocket = HiveAuthFactory.getServerSocket(hiveHost, customPortNum);
+      } else {
+        List<String> sslVersionBlacklist = new ArrayList<String>();
+        for (String sslVersion : hiveConf.getVar(ConfVars.HIVE_SSL_PROTOCOL_BLACKLIST).split(",")) {
+          sslVersionBlacklist.add(sslVersion);
+        }
+        String keyStorePath = hiveConf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PATH).trim();
+        if (keyStorePath.isEmpty()) {
+          throw new IllegalArgumentException(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PATH.varname +
+          " Not configured for SSL keystore path");
+        }
+        String keyStorePassword = ShimLoader.getHadoopShims().getPassword(hiveConf,
+          HiveConf.ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PASSWORD.varname);
+        customKrbSocket = HiveAuthFactory.getServerSSLSocket(hiveHost, customPortNum,
+          keyStorePath, keyStorePassword, sslVersionBlacklist);
+      }
 
-     // Server args
-     int maxMessageSize = hiveConf.getIntVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_MAX_MESSAGE_SIZE);
-     int requestTimeout = (int) hiveConf.getTimeVar(
-         HiveConf.ConfVars.HIVE_SERVER2_THRIFT_LOGIN_TIMEOUT, TimeUnit.SECONDS);
-     int beBackoffSlotLength = (int) hiveConf.getTimeVar(
-         HiveConf.ConfVars.HIVE_SERVER2_THRIFT_LOGIN_BEBACKOFF_SLOT_LENGTH, TimeUnit.MILLISECONDS);
-     TThreadPoolServer.Args sargs = new TThreadPoolServer.Args(customKrbSocket)
-         .processorFactory(processorFactory).transportFactory(transportFactory)
-         .protocolFactory(new TBinaryProtocol.Factory())
-         .inputProtocolFactory(new TBinaryProtocol.Factory(true, true, maxMessageSize, maxMessageSize))
-         .requestTimeout(requestTimeout).requestTimeoutUnit(TimeUnit.SECONDS)
-         .beBackoffSlotLength(beBackoffSlotLength).beBackoffSlotLengthUnit(TimeUnit.MILLISECONDS)
-         .executorService(executorService);
+      // Server args
+      int maxMessageSize = hiveConf.getIntVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_MAX_MESSAGE_SIZE);
+      int requestTimeout = (int) hiveConf.getTimeVar(
+        HiveConf.ConfVars.HIVE_SERVER2_THRIFT_LOGIN_TIMEOUT, TimeUnit.SECONDS);
+      int beBackoffSlotLength = (int) hiveConf.getTimeVar(
+        HiveConf.ConfVars.HIVE_SERVER2_THRIFT_LOGIN_BEBACKOFF_SLOT_LENGTH, TimeUnit.MILLISECONDS);
+      TThreadPoolServer.Args sargs = new TThreadPoolServer.Args(customKrbSocket)
+        .processorFactory(processorFactory).transportFactory(transportFactory)
+        .protocolFactory(new TBinaryProtocol.Factory())
+        .inputProtocolFactory(new TBinaryProtocol.Factory(true, true, maxMessageSize, maxMessageSize))
+        .requestTimeout(requestTimeout).requestTimeoutUnit(TimeUnit.SECONDS)
+        .beBackoffSlotLength(beBackoffSlotLength).beBackoffSlotLengthUnit(TimeUnit.MILLISECONDS)
+        .executorService(executorService);
 
-     // TCP Server
-     customKrbServer = new TThreadPoolServer(sargs);
-     String msg = "Starting " + ThriftBinaryCLIService.class.getSimpleName()
-         + " custom authentication with Kerberos listening on "
-         + customPortNum + " with " + minThreads + "..." + maxThreads + " worker threads";
-     LOG.info(msg);
+      // TCP Server
+      customKrbServer = new TThreadPoolServer(sargs);
+      String msg =
+        String.format("Starting %s custom authentication with Kerberos listening on %d with %d ... %d worker threads", 
+          ThriftBinaryCLIService.class.getSimpleName(),
+          customPortNum, minThreads, maxThreads);
+      LOG.info(msg);
 
-     customKrbServer.serve();
-   } catch (Throwable t) {
-     LOG.fatal(
-       "Error starting HiveServer2: could not start custom authentication with Kerberos", t);
-   }
- }
+      customKrbServer.serve();
+    } catch (Throwable t) {
+      LOG.fatal(
+        "Error starting HiveServer2: could not start custom authentication with Kerberos", t);
+    }
+  }
 }

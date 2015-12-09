@@ -5,12 +5,14 @@ import javax.security.sasl.AuthenticationException;
 public class DefaultKrbCustomAuthenticationProviderImpl implements KrbCustomAuthenticationProvider {
 
  /**
-  * This class will be called when you set
-  * hive.server2.authentication=KERBEROS and hive.server2.kerberos.custom.authentication.used = true
-  * with hive.server2.kerberos.custom.authentication.class=<class name> on hive-site.xml
+  * This class is a default custom authentication class.
+  * It will be called when you set the configuration as
+  * hive.server2.authentication=KERBEROS,
+  * hive.server2.kerberos.custom.authentication.used=true,
+  * and hive.server2.kerberos.custom.authentication.class is unset on hive-site.xml
   **/
   @Override
-  public void Authenticate(String user, String password) throws AuthenticationException {
+  public void authenticate(String user, String password) throws AuthenticationException {
     throw new AuthenticationException("Unsupported authentication method on Kerberos environment");
   }
 }
