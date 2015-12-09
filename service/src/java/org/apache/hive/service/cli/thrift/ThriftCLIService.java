@@ -733,7 +733,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     return proxyUser;
   }
 
-  private boolean isKerberosAuthMode() {
+  protected boolean isKerberosAuthMode() {
     return cliService.getHiveConf().getVar(ConfVars.HIVE_SERVER2_AUTHENTICATION)
         .equalsIgnoreCase(HiveAuthFactory.AuthTypes.KERBEROS.toString());
   }
