@@ -62,7 +62,6 @@ public class TestHiveMetaStoreClientWithMiniKdc {
 
   @Test
   public void testHiveMetaStoreClientConnection() throws Exception {
- Socket clientSock = null;
     try {
       serverSock = new ServerSocket(port);
 
@@ -72,7 +71,7 @@ public class TestHiveMetaStoreClientWithMiniKdc {
       HMClient client = new HMClient();
       client.start();
 
-      clientSock = serverSock.accept();
+      Socket clientSock = serverSock.accept();
       assertEquals(mscIP, clientSock.getInetAddress().getHostAddress());
 
     } catch (IOException e) {
@@ -98,7 +97,6 @@ public class TestHiveMetaStoreClientWithMiniKdc {
       while (nicaddrs.hasMoreElements())
       {
         InetAddress addr = (InetAddress) nicaddrs.nextElement();
-        System.out.println(addr.getHostAddress());
         // only check IPv4
         if (addr.getHostAddress().contains(".")
             && !addr.getHostAddress().equals("127.0.0.1")) {

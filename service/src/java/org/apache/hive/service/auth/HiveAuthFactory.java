@@ -165,7 +165,7 @@ public class HiveAuthFactory {
   /**
    * Returns the thrift processor factory for HiveServer2 running in binary mode
    * @param service
-   * @return
+   * @return thrift processor factory
    * @throws LoginException
    */
   public TProcessorFactory getAuthProcFactory(ThriftCLIService service) throws LoginException {
@@ -179,7 +179,7 @@ public class HiveAuthFactory {
   /**
    * Returns an authentication factory for HiveServer2 running
    * that verifies the ID/PASSWORD using custom class over SSL with Kerberos
-   * @return
+   * @return thrift processor factory
    * @throws LoginException
    */
   public TTransportFactory getAuthPlainTransFactory() throws LoginException {

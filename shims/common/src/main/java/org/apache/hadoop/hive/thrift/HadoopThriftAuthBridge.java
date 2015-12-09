@@ -626,7 +626,7 @@ public class HadoopThriftAuthBridge {
 
         try {
           // It calls custom Authentication module
-          this.customProvider.Authenticate(userName, userPassword);
+          this.customProvider.authenticate(userName, userPassword);
         } catch (AuthenticationException e) {
           throw new InvalidToken("ERROR: ugi="+userName+" is not allowed");
         }

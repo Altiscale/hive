@@ -17,5 +17,5 @@ public interface KrbCustomAuthenticationProvider {
    * @throws AuthenticationException - When a user is found to be
    * invalid by the implementation
    */
-   void Authenticate(String user, String password) throws AuthenticationException;
+   void authenticate(String user, String password) throws AuthenticationException;
 }
