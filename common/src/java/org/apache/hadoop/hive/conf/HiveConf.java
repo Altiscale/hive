@@ -1954,6 +1954,24 @@ public class HiveConf extends Configuration {
         "hive.security.authenticator.manager,hive.security.authorization.manager,hive.users.in.admin.role",
         "Comma separated list of configuration options which are immutable at runtime"),
 
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_USED("hive.server2.kerberos.custom.authentication.used", false,
+        "Set this to true for using custom authentication class with Kerberos in HiveServer2."),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_CLASS("hive.server2.kerberos.custom.authentication.class", null,
+        "Custom authentication class with Kerberos. Used when property\n" +
+        "'hive.server2.authentication' is set to 'KERBEROS' and" +
+        "'hive.server2.kerberos.custom.authentication.used' is set to 'true'.\n" +
+        "Provided class must be a proper implementation of the interface\n" +
+        "org.apache.hadoop.hive.thrift.KrbCustomAuthenticationProvider.\n" +
+        "Hiveserver2 will call its authenticate(user, passed) method to authenticate requests.\n" +
+        "The implementation may optionally implement Hadoop's\n" +
+        "org.apache.hadoop.conf.Configurable class to grab Hive's Configuration object."),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_PORT("hive.server2.kerberos.custom.authentication.port", 10010,
+        "Port number of HiveServer2 for using custom authentication class with Kerberos."),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MIN_WORKER_THREADS("hive.server2.kerberos.custom.authentication.min.worker.threads", 5,
+        "Minimum number of custom authentication class worker threads with Kerberos"),
+    HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_MAX_WORKER_THREADS("hive.server2.kerberos.custom.authentication.max.worker.threads", 500,
+        "Maximum number of custom authentication class worker threads with Kerberos"),
+
     // If this is set all move tasks at the end of a multi-insert query will only begin once all
     // outputs are ready
     HIVE_MULTI_INSERT_MOVE_TASKS_SHARE_DEPENDENCIES(

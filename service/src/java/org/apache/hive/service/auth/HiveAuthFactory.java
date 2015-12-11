@@ -165,7 +165,7 @@ public class HiveAuthFactory {
   /**
    * Returns the thrift processor factory for HiveServer2 running in binary mode
    * @param service
-   * @return
+   * @return thrift processor factory
    * @throws LoginException
    */
   public TProcessorFactory getAuthProcFactory(ThriftCLIService service) throws LoginException {
@@ -174,6 +174,26 @@ public class HiveAuthFactory {
     } else {
       return PlainSaslHelper.getPlainProcessorFactory(service);
     }
+  }
+
+  /**
+   * Returns an authentication factory for HiveServer2 running
+   * that verifies the ID/PASSWORD using custom class over SSL with Kerberos
+   * @return thrift processor factory
+   * @throws LoginException
+   */
+  public TTransportFactory getAuthPlainTransFactory() throws LoginException {
+    TTransportFactory transportFactory;
+    if (authTypeStr.equalsIgnoreCase(AuthTypes.KERBEROS.getAuthName())) {
+      try {
+        transportFactory = saslServer.createPlainTransportFactory(getSaslProperties());
+      } catch (TTransportException e) {
+        throw new LoginException(e.getMessage());
+      }
+    } else {
+      throw new LoginException("Unsupported authentication type " + authTypeStr);
+    }
+    return transportFactory;
   }
 
   public String getRemoteUser() {

@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -32,6 +33,7 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.sasl.AuthenticationException;
 import javax.security.sasl.AuthorizeCallback;
 import javax.security.sasl.RealmCallback;
 import javax.security.sasl.RealmChoiceCallback;
@@ -322,9 +324,12 @@ public class HadoopThriftAuthBridge {
         "hive.cluster.delegation.token.store.zookeeper.acl";
     public static final String DELEGATION_TOKEN_STORE_ZK_ZNODE_DEFAULT =
         "/hivedelegation";
+    public static final String HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_CLASS =
+        "hive.server2.kerberos.custom.authentication.class";
 
     protected final UserGroupInformation realUgi;
     protected DelegationTokenSecretManager secretManager;
+    Configuration thriftConf;
 
     public Server() throws TTransportException {
       try {
@@ -361,9 +366,9 @@ public class HadoopThriftAuthBridge {
 
     /**
      * Create a TTransportFactory that, upon connection of a client socket,
-     * negotiates a Kerberized SASL transport. The resulting TTransportFactory
-     * can be passed as both the input and output transport factory when
-     * instantiating a TThreadPoolServer, for example.
+     * negotiates a Kerberized SASL transport with KERBEROS and DIGEST mechanisms.
+     * The resulting TTransportFactory can be passed as both the input and output
+     * transport factory when instantiating a TThreadPoolServer, for example.
      *
      * @param saslProps Map of SASL properties
      */
@@ -386,6 +391,32 @@ public class HadoopThriftAuthBridge {
       transFactory.addServerDefinition(AuthMethod.DIGEST.getMechanismName(),
           null, SaslRpcServer.SASL_DEFAULT_REALM,
           saslProps, new SaslDigestCallbackHandler(secretManager));
+
+      return new TUGIAssumingTransportFactory(transFactory, realUgi);
+    }
+
+    /**
+     * Create a TTransportFactory that, upon connection of a client socket,
+     * negotiates a Kerberized SASL transport with PLAIN mechanism.
+     * The resulting TTransportFactory can be passed as both the input and output
+     * transport factory when instantiating a TThreadPoolServer, for example.
+     *
+     * @param saslProps Map of SASL properties
+     */
+    public TTransportFactory createPlainTransportFactory(Map<String, String> saslProps)
+        throws TTransportException {
+      // Parse out the kerberos principal, host, realm.
+      String kerberosName = realUgi.getUserName();
+      final String names[] = SaslRpcServer.splitKerberosName(kerberosName);
+      if (names.length != 3) {
+        throw new TTransportException("Kerberos principal should have 3 parts: " + kerberosName);
+      }
+
+      TSaslServerTransport.Factory transFactory = new TSaslServerTransport.Factory();
+      // Add for custom class on kerberized cluster
+      transFactory.addServerDefinition("PLAIN",
+          "NONE", null, new HashMap<String, String>(),
+          new SaslCustomServerCallbackHandler(thriftConf));
 
       return new TUGIAssumingTransportFactory(transFactory, realUgi);
     }
@@ -446,6 +477,7 @@ public class HadoopThriftAuthBridge {
           tokenMaxLifetime,
           tokenRenewInterval,
           tokenGcInterval, dts);
+      thriftConf = new Configuration(conf);
       secretManager.startThreads();
     }
 
@@ -545,6 +577,64 @@ public class HadoopThriftAuthBridge {
 
     public String getRemoteUser() {
       return remoteUser.get();
+    }
+
+    /** CallbackHandler for Server Custom authentication class with Kerberos */
+    // The client mechanism uses PLAIN on SASL API with Kerberos.
+    // Therefore, it has the similar format with PlainServerCallbackHandler.
+    static class SaslCustomServerCallbackHandler implements CallbackHandler {
+      private KrbCustomAuthenticationProvider customProvider;
+
+      public SaslCustomServerCallbackHandler(Configuration conf) {
+        // Default custom class : It only allows CUSTOM authentication with Kerberos cluster
+        String customClassName = conf.get(
+          HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_CLASS,
+          "org.apache.hadoop.hive.thrift.DefaultKrbCustomAuthenticationProviderImpl");
+
+        try {
+          Class<? extends KrbCustomAuthenticationProvider> customHandlerClass =
+            Class.forName(customClassName).asSubclass(
+              KrbCustomAuthenticationProvider.class);
+          this.customProvider = ReflectionUtils.newInstance(customHandlerClass, conf);
+        } catch (ClassNotFoundException e) {
+          LOG.debug("Cannot find the custom authentication class: "
+            + customClassName);
+        }
+      }
+
+      @Override
+      public void handle(Callback[] callbacks) throws InvalidToken,
+      UnsupportedCallbackException {
+        String userName = null;
+        String userPassword = null;
+        AuthorizeCallback ac = null;
+
+        for (Callback callback : callbacks) {
+          if (callback instanceof AuthorizeCallback) {
+            ac = (AuthorizeCallback) callback;
+          } else if (callback instanceof NameCallback) {
+            NameCallback nc = (NameCallback) callback;
+            userName = nc.getName();
+          } else if (callback instanceof PasswordCallback) {
+            PasswordCallback pc = (PasswordCallback) callback;
+            userPassword = new String(pc.getPassword());
+          } else {
+            throw new UnsupportedCallbackException(callback,
+                "Unrecognized CUSTOM PLAIN Callback");
+          }
+        }
+
+        try {
+          // It calls custom Authentication module
+          this.customProvider.authenticate(userName, userPassword);
+        } catch (AuthenticationException e) {
+          throw new InvalidToken("ERROR: ugi="+userName+" is not allowed");
+        }
+
+        if (ac != null) {
+          ac.setAuthorized(true);
+        }
+      }
     }
 
     /** CallbackHandler for SASL DIGEST-MD5 mechanism */
@@ -650,7 +740,6 @@ public class HadoopThriftAuthBridge {
         TSaslServerTransport saslTrans = (TSaslServerTransport)trans;
         SaslServer saslServer = saslTrans.getSaslServer();
         String authId = saslServer.getAuthorizationID();
-        authenticationMethod.set(AuthenticationMethod.KERBEROS);
         LOG.debug("AUTH ID ======>" + authId);
         String endUser = authId;
 
@@ -663,6 +752,12 @@ public class HadoopThriftAuthBridge {
           } catch (InvalidToken e) {
             throw new TException(e.getMessage());
           }
+        }
+        else if (saslServer.getMechanismName().equals("GSSAPI")) {
+          authenticationMethod.set(AuthenticationMethod.KERBEROS);
+        }
+        else if (saslServer.getMechanismName().equals("PLAIN")) {
+          LOG.debug("INFO: Request custom authentication module");
         }
         Socket socket = ((TSocket)(saslTrans.getUnderlyingTransport())).getSocket();
         remoteAddress.set(socket.getInetAddress());
