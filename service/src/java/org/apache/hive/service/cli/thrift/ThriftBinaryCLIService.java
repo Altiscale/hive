@@ -169,7 +169,23 @@ public class ThriftBinaryCLIService extends ThriftCLIService {
      TProcessorFactory processorFactory = hiveAuthFactory.getAuthProcFactory(service);
      TServerSocket customKrbSocket = null;
 
-     customKrbSocket = HiveAuthFactory.getServerSocket(hiveHost, customPortNum);
+     if (!hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_USED)) {
+       customKrbSocket = HiveAuthFactory.getServerSocket(hiveHost, customPortNum);
+     } else {
+       List<String> sslVersionBlacklist = new ArrayList<String>();
+       for (String sslVersion : hiveConf.getVar(ConfVars.HIVE_SSL_PROTOCOL_BLACKLIST).split(",")) {
+         sslVersionBlacklist.add(sslVersion);
+       }
+       String keyStorePath = hiveConf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PATH).trim();
+       if (keyStorePath.isEmpty()) {
+         throw new IllegalArgumentException(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PATH.varname +
+         " Not configured for SSL connection");
+       }
+       String keyStorePassword = ShimLoader.getHadoopShims().getPassword(hiveConf,
+           HiveConf.ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_SSL_KEYSTORE_PASSWORD.varname);
+       customKrbSocket = HiveAuthFactory.getServerSSLSocket(hiveHost, customPortNum,
+         keyStorePath, keyStorePassword, sslVersionBlacklist);
+     }
 
      // Server args
      int maxMessageSize = hiveConf.getIntVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_MAX_MESSAGE_SIZE);

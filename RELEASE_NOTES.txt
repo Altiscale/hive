@@ -352,6 +352,7 @@ Release Notes - Hive - Version 1.2.0
     * [HIVE-10614] - schemaTool upgrade from 0.14.0 to 1.3.0 causes failure
     * [HIVE-10638] - HIVE-9736 introduces issues with Hadoop23Shims.checkFileAccess
     * [HIVE-10715] - RAT failures - many files do not have ASF licenses
+    * [HIVE-10838] - Allow the hive metastore client can set the bind address to connect HMS
 
 
 ** Improvement
@@ -416,6 +417,7 @@ Release Notes - Hive - Version 1.2.0
     * [HIVE-10467] - Switch to GIT repository on Jenkins precommit tests
     * [HIVE-10546] - genFileSinkPlan should use the generated SEL's RR for the partition col of FS
     * [HIVE-10568] - Select count(distinct()) can have more optimal execution plan
+    * [HIVE-10292] - Support custom authentication class for HS2 with Kerberos (with SSL / without SSL)
 
 
 ** New Feature
