@@ -193,6 +193,11 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.shaded.org.objenesis.strategy.StdInstantiatorStrategy;
 
+import com.google.common.base.Preconditions;
+import java.util.Enumeration;
+import java.net.URLDecoder;
+
+
 /**
  * Utilities.
  *
@@ -3860,15 +3865,36 @@ public final class Utilities {
   }
 
   /**
-   * Strips Hive password details from configuration
+   * Returns the full path to the Jar containing the class. It always return a JAR.
+   *
+   * @param klass
+   *          class.
+   *
+   * @return path to the Jar containing the class.
    */
-  public static void stripHivePasswordDetails(Configuration conf) {
-    // Strip out all Hive related password information from the JobConf
-    if (HiveConf.getVar(conf, HiveConf.ConfVars.METASTOREPWD) != null) {
-      HiveConf.setVar(conf, HiveConf.ConfVars.METASTOREPWD, "");
+  @SuppressWarnings("rawtypes")
+  public static String jarFinderGetJar(Class klass) {
+    Preconditions.checkNotNull(klass, "klass");
+    ClassLoader loader = klass.getClassLoader();
+    if (loader != null) {
+      String class_file = klass.getName().replaceAll("\\.", "/") + ".class";
+      try {
+        for (Enumeration itr = loader.getResources(class_file); itr.hasMoreElements();) {
+          URL url = (URL) itr.nextElement();
+          String path = url.getPath();
+          if (path.startsWith("file:")) {
+            path = path.substring("file:".length());
+          }
+          path = URLDecoder.decode(path, "UTF-8");
+          if ("jar".equals(url.getProtocol())) {
+            path = URLDecoder.decode(path, "UTF-8");
+            return path.replaceAll("!.*$", "");
+          }
+        }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
-    if (HiveConf.getVar(conf, HiveConf.ConfVars.HIVE_SERVER2_SSL_KEYSTORE_PASSWORD) != null) {
-      HiveConf.setVar(conf, HiveConf.ConfVars.HIVE_SERVER2_SSL_KEYSTORE_PASSWORD, "");
-    }
+    return null;
   }
 }
