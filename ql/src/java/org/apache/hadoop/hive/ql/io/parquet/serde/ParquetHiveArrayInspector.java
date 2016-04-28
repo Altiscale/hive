@@ -79,7 +79,7 @@ public class ParquetHiveArrayInspector implements SettableListObjectInspector {
 
     if (data instanceof ArrayWritable) {
       final Writable[] array = ((ArrayWritable) data).get();
-      if (array == null || array.length == 0) {
+      if (array == null) {
         return -1;
       }
 
@@ -97,7 +97,7 @@ public class ParquetHiveArrayInspector implements SettableListObjectInspector {
 
     if (data instanceof ArrayWritable) {
       final Writable[] array = ((ArrayWritable) data).get();
-      if (array == null || array.length == 0) {
+      if (array == null) {
         return null;
       }
 
