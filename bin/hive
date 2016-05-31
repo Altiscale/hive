@@ -114,7 +114,7 @@ done
 if [[ -n "$SPARK_HOME" ]]
 then
   sparkAssemblyPath=`ls ${SPARK_HOME}/lib/spark-assembly-*.jar`
-  CLASSPATH="${CLASSPATH}:${sparkAssemblyPath}"
+#  CLASSPATH="${CLASSPATH}:${sparkAssemblyPath}"
 fi
 
 # add the auxillary jars such as serdes
