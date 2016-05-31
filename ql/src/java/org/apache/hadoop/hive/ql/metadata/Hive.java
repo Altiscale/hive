@@ -242,6 +242,7 @@ public class Hive {
     Hive db = hiveDB.get();
     if (db != null && !db.isCurrentUserOwner()) {
       LOG.debug("Creating new db. db.isCurrentUserOwner = " + db.isCurrentUserOwner());
+      LOG.debug("HEESOO db= " + db);
       db.close();
       db = null;
     }
@@ -274,6 +275,7 @@ public class Hive {
 
   private boolean isCurrentUserOwner() throws HiveException {
     try {
+      LOG.debug("HEESOO isCurrentUserOwner: owner=" + owner==null?"null":owner + ", currentUser=" + UserGroupInformation.getCurrentUser());
       return owner == null || owner.equals(UserGroupInformation.getCurrentUser());
     } catch(IOException e) {
       throw new HiveException("Error getting current user: " + e.getMessage(), e);
