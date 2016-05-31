@@ -2092,4 +2092,9 @@ public class HiveMetaStoreClient implements IMetaStoreClient {
     PartitionsStatsRequest req = new PartitionsStatsRequest(dbName, tblName, colNames, partNames);
     return client.get_aggr_stats_for(req);
   }
+
+  @Override
+  public boolean isSameConfObj(HiveConf c) {
+    return conf == c;
+  }
 }

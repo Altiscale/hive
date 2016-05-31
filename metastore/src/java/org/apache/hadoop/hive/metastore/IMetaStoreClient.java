@@ -1452,4 +1452,6 @@ public interface IMetaStoreClient {
       List<String> colNames, List<String> partName)  throws NoSuchObjectException, MetaException, TException;
 
   boolean setPartitionColumnStatistics(SetPartitionsStatsRequest request) throws NoSuchObjectException, InvalidObjectException, MetaException, TException, InvalidInputException;
+
+  boolean isSameConfObj(HiveConf c);
 }

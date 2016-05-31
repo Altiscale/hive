@@ -82,7 +82,7 @@ public class HiveConf extends Configuration {
   private final Set<String> hiddenSet = new HashSet<String>();
 
   private Pattern modWhiteListPattern = null;
-  private boolean isSparkConfigUpdated = false;
+  private volatile boolean isSparkConfigUpdated = false;
 
   public boolean getSparkConfigUpdated() {
     return isSparkConfigUpdated;
