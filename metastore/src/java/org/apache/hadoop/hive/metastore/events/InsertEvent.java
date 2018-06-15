@@ -58,7 +58,6 @@ public class InsertEvent extends ListenerEvent {
     this.table = table;
     this.files = insertData.getFilesAdded();
     GetTableRequest req = new GetTableRequest(db, table);
-    req.setCapabilities(HiveMetaStoreClient.TEST_VERSION);
     Table t = handler.get_table_req(req).getTable();
     keyValues = new LinkedHashMap<String, String>();
     if (partVals != null) {
