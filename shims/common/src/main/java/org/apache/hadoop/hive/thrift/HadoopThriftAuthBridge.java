@@ -27,6 +27,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -509,6 +510,8 @@ public abstract class HadoopThriftAuthBridge {
     static class SaslCustomServerCallbackHandler implements CallbackHandler {
       private KrbCustomAuthenticationProvider customProvider;
 
+      Configuration conf = new Configuration();
+      
       public SaslCustomServerCallbackHandler(String customClassName) {
         // Default custom class : It only allows CUSTOM authentication with Kerberos cluster
         /*
@@ -516,13 +519,15 @@ public abstract class HadoopThriftAuthBridge {
           HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_CLASS,
           "org.apache.hadoop.hive.thrift.DefaultKrbCustomAuthenticationProviderImpl");
         */
-
+        
+        conf.set("type", "hive");
         try {
+          LOG.error("JORIS: SaslCustomServerCallbackHandler: start instantiating the custom handler class.");
           Class<? extends KrbCustomAuthenticationProvider> customHandlerClass =
-            Class.forName(customClassName).asSubclass(
-              KrbCustomAuthenticationProvider.class);
-          //this.customProvider = ReflectionUtils.newInstance(customHandlerClass, conf);
-          this.customProvider = ReflectionUtils.newInstance(customHandlerClass, null);
+            Class.forName(customClassName).asSubclass(KrbCustomAuthenticationProvider.class);
+          this.customProvider = ReflectionUtils.newInstance(customHandlerClass, conf);
+          LOG.error("JORIS: instanciation successful");
+          //this.customProvider = ReflectionUtils.newInstance(customHandlerClass, null);
         } catch (ClassNotFoundException e) {
           LOG.debug("Cannot find the custom authentication class: "
             + customClassName);
