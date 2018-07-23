@@ -522,12 +522,9 @@ public abstract class HadoopThriftAuthBridge {
         
         conf.set("type", "hive");
         try {
-          LOG.error("JORIS: SaslCustomServerCallbackHandler: start instantiating the custom handler class.");
           Class<? extends KrbCustomAuthenticationProvider> customHandlerClass =
             Class.forName(customClassName).asSubclass(KrbCustomAuthenticationProvider.class);
           this.customProvider = ReflectionUtils.newInstance(customHandlerClass, conf);
-          LOG.error("JORIS: instanciation successful");
-          //this.customProvider = ReflectionUtils.newInstance(customHandlerClass, null);
         } catch (ClassNotFoundException e) {
           LOG.debug("Cannot find the custom authentication class: "
             + customClassName);
