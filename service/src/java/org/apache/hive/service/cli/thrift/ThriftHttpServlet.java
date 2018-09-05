@@ -20,7 +20,6 @@ package org.apache.hive.service.cli.thrift;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,7 +43,6 @@ import org.apache.hadoop.hive.shims.HadoopShims.KerberosNameShim;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.hive.shims.Utils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticator;
 import org.apache.hive.service.CookieSigner;
 import org.apache.hive.service.auth.AuthenticationProviderFactory;
 import org.apache.hive.service.auth.AuthenticationProviderFactory.AuthMethods;
@@ -93,7 +91,7 @@ public class ThriftHttpServlet extends TServlet {
   private final HiveAuthFactory hiveAuthFactory;
   private static final String HIVE_DELEGATION_TOKEN_HEADER =  "X-Hive-Delegation-Token";
   private static final String X_FORWARDED_FOR = "X-Forwarded-For";
-  private static final String X_SAP_HIVE_PASSWDAUTH = "X-SAP-Hive-PasswdAuth";
+  private static final String X_HTTP_AUTH_TYPE = "x-http-authtype";
 
   public ThriftHttpServlet(TProcessor processor, TProtocolFactory protocolFactory,
       String authType, UserGroupInformation serviceUGI, UserGroupInformation httpUGI,
@@ -151,7 +149,7 @@ public class ThriftHttpServlet extends TServlet {
       // depending on the server setup.
       if (clientUserName == null) {
         // For a kerberos setup
-        if (isKerberosAuthMode(authType) && !"true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
+        if (isKerberosAuthMode(authType) && !"Basic".equalsIgnoreCase(request.getHeader(X_HTTP_AUTH_TYPE))) {
           String delegationToken = request.getHeader(HIVE_DELEGATION_TOKEN_HEADER);
           // Each http request must have an Authorization header
           if ((delegationToken != null) && (!delegationToken.isEmpty())) {
@@ -210,9 +208,9 @@ public class ThriftHttpServlet extends TServlet {
       LOG.error("Error: ", e);
       // Send a 401 to the client
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      if(isKerberosAuthMode(authType) && !"true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
+      if(isKerberosAuthMode(authType) && !"Basic".equalsIgnoreCase(request.getHeader(X_HTTP_AUTH_TYPE))) {
         response.addHeader(HttpAuthUtils.WWW_AUTHENTICATE, HttpAuthUtils.NEGOTIATE);
-      } else if(isKerberosAuthMode(authType) && "true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
+      } else if(isKerberosAuthMode(authType) && "Basic".equalsIgnoreCase(request.getHeader(X_HTTP_AUTH_TYPE))) {
         response.addHeader(HttpAuthUtils.WWW_AUTHENTICATE, HttpAuthUtils.BASIC);
       }
       response.getWriter().println("Authentication Error: " + e.getMessage());
@@ -555,7 +553,7 @@ public class ThriftHttpServlet extends TServlet {
 
     String authHeaderBase64String;
     int beginIndex;
-    if (isKerberosAuthMode(authType) && !"true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
+    if (isKerberosAuthMode(authType) && !"Basic".equalsIgnoreCase(request.getHeader(X_HTTP_AUTH_TYPE))) {
       beginIndex = (HttpAuthUtils.NEGOTIATE + " ").length();
     }
     else {
