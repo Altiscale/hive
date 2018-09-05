@@ -30,6 +30,7 @@ public final class AuthenticationProviderFactory {
     LDAP("LDAP"),
     PAM("PAM"),
     CUSTOM("CUSTOM"),
+    KERBEROS("KERBEROS"),
     NONE("NONE");
 
     private final String authMethod;
@@ -66,6 +67,8 @@ public final class AuthenticationProviderFactory {
       return new LdapAuthenticationProviderImpl(conf);
     } else if (authMethod == AuthMethods.PAM) {
       return new PamAuthenticationProviderImpl(conf);
+    } else if (authMethod == AuthMethods.KERBEROS) {
+      return new CustomAuthWithKerberosImpl(conf);
     } else if (authMethod == AuthMethods.CUSTOM) {
       return new CustomAuthenticationProviderImpl(conf);
     } else if (authMethod == AuthMethods.NONE) {

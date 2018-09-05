@@ -93,6 +93,7 @@ public class ThriftHttpServlet extends TServlet {
   private final HiveAuthFactory hiveAuthFactory;
   private static final String HIVE_DELEGATION_TOKEN_HEADER =  "X-Hive-Delegation-Token";
   private static final String X_FORWARDED_FOR = "X-Forwarded-For";
+  private static final String X_SAP_HIVE_PASSWDAUTH = "X-SAP-Hive-PasswdAuth";
 
   public ThriftHttpServlet(TProcessor processor, TProtocolFactory protocolFactory,
       String authType, UserGroupInformation serviceUGI, UserGroupInformation httpUGI,
@@ -150,7 +151,7 @@ public class ThriftHttpServlet extends TServlet {
       // depending on the server setup.
       if (clientUserName == null) {
         // For a kerberos setup
-        if (isKerberosAuthMode(authType)) {
+        if (isKerberosAuthMode(authType) && !"true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
           String delegationToken = request.getHeader(HIVE_DELEGATION_TOKEN_HEADER);
           // Each http request must have an Authorization header
           if ((delegationToken != null) && (!delegationToken.isEmpty())) {
@@ -209,8 +210,10 @@ public class ThriftHttpServlet extends TServlet {
       LOG.error("Error: ", e);
       // Send a 401 to the client
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      if(isKerberosAuthMode(authType)) {
+      if(isKerberosAuthMode(authType) && !"true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
         response.addHeader(HttpAuthUtils.WWW_AUTHENTICATE, HttpAuthUtils.NEGOTIATE);
+      } else if(isKerberosAuthMode(authType) && "true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
+        response.addHeader(HttpAuthUtils.WWW_AUTHENTICATE, HttpAuthUtils.BASIC);
       }
       response.getWriter().println("Authentication Error: " + e.getMessage());
     }
@@ -356,6 +359,7 @@ public class ThriftHttpServlet extends TServlet {
     // No-op when authType is NOSASL
     if (!authType.equalsIgnoreCase(HiveAuthFactory.AuthTypes.NOSASL.toString())) {
       try {
+        //Check if sap auth header is present and if so use this custom class that we created
         AuthMethods authMethod = AuthMethods.getValidAuthMethod(authType);
         PasswdAuthenticationProvider provider =
             AuthenticationProviderFactory.getAuthenticationProvider(authMethod, hiveConf);
@@ -551,7 +555,7 @@ public class ThriftHttpServlet extends TServlet {
 
     String authHeaderBase64String;
     int beginIndex;
-    if (isKerberosAuthMode(authType)) {
+    if (isKerberosAuthMode(authType) && !"true".equalsIgnoreCase(request.getHeader(X_SAP_HIVE_PASSWDAUTH))) {
       beginIndex = (HttpAuthUtils.NEGOTIATE + " ").length();
     }
     else {
