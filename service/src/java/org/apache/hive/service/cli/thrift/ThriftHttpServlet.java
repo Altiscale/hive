@@ -357,7 +357,7 @@ public class ThriftHttpServlet extends TServlet {
     // No-op when authType is NOSASL
     if (!authType.equalsIgnoreCase(HiveAuthFactory.AuthTypes.NOSASL.toString())) {
       try {
-        //Check if sap auth header is present and if so use this custom class that we created
+        //Check if http auth header is present and if so use this custom class that we created
         AuthMethods authMethod = AuthMethods.getValidAuthMethod(authType);
         PasswdAuthenticationProvider provider =
             AuthenticationProviderFactory.getAuthenticationProvider(authMethod, hiveConf);
