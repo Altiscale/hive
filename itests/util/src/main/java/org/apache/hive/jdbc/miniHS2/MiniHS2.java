@@ -121,6 +121,8 @@ public class MiniHS2 extends AbstractHiveService {
 
     public Builder withConf(HiveConf hiveConf) {
       this.hiveConf = hiveConf;
+      if(hiveConf.getVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE).equalsIgnoreCase(HS2_HTTP_MODE))
+        return withHTTPTransport();
       return this;
     }
 
