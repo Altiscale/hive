@@ -20,7 +20,6 @@ package org.apache.hive.service.auth;
 import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -38,8 +37,6 @@ import javax.security.sasl.Sasl;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.hadoop.hive.metastore.IMetaStoreClient;
-import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.shims.HadoopShims.KerberosNameShim;
 import org.apache.hadoop.hive.shims.ShimLoader;
@@ -52,6 +49,7 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.ProxyUsers;
 import org.apache.hive.service.cli.HiveSQLException;
+import org.apache.hive.service.HiveTransportMode;
 import org.apache.hive.service.cli.thrift.ThriftCLIService;
 import org.apache.thrift.TProcessorFactory;
 import org.apache.thrift.transport.TSSLTransportFactory;
@@ -111,9 +109,17 @@ public class HiveAuthFactory {
     // hadoopAuth is not simple, it does not guarantee it is kerberos
     hadoopAuth = conf.get(HADOOP_SECURITY_AUTHENTICATION, "simple");
 
+    /*
+       With refactoring of the code to support dual mode "http" and "binary"
+       SSL always being used in conjunction with http transport mode,
+       So, the following code need not be refactored as it has explicit of
+       authTypeStr being checked for nulls. So, with http mode,
+       authTypeStr will not null
+    */
+
     // In http mode we use NOSASL as the default auth type
     if (authTypeStr == null) {
-      if ("http".equalsIgnoreCase(transportMode)) {
+      if (HiveTransportMode.http.toString().equalsIgnoreCase(transportMode)) {
         authTypeStr = AuthTypes.NOSASL.getAuthName();
       } else {
         authTypeStr = AuthTypes.NONE.getAuthName();

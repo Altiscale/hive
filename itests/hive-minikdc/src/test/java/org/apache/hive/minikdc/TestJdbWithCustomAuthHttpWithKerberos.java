@@ -6,6 +6,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,9 +19,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@RunWith(Parameterized.class)
 public class TestJdbWithCustomAuthHttpWithKerberos {
   private static final Logger LOG = LoggerFactory.getLogger(TestSSL.class);
 
@@ -28,13 +35,21 @@ public class TestJdbWithCustomAuthHttpWithKerberos {
   protected static final String KEY_STORE_PASSWORD = "HiveJdbc";
   private static final String JAVA_TRUST_STORE_PROP = "javax.net.ssl.trustStore";
   private static final String JAVA_TRUST_STORE_PASS_PROP = "javax.net.ssl.trustStorePassword";
-
   private MiniHiveKdc miniHiveKdc;
   protected static MiniHS2 miniHS2 = null;
   private static Connection hs2Conn = null;
   protected static HiveConf hiveConf = new HiveConf();
   private Map<String, String> confOverlay;
   protected String dataFileDir = hiveConf.get("test.data.files");
+  @Parameter
+  public String transportMode =  null;
+
+  @Parameters(name = "{index}: tranportMode={0}")
+  public static Collection<Object[]> transportModes() {
+    return Arrays.asList(new Object[][] {
+        { MiniHS2.HS2_ALL_MODE },{ MiniHS2.HS2_HTTP_MODE}
+    });
+  }
 
   protected String getJdbcUrl(boolean isSsl) {
     if (isSsl) {
@@ -59,7 +74,7 @@ public class TestJdbWithCustomAuthHttpWithKerberos {
   public void setUp() throws Exception {
     DriverManager.setLoginTimeout(0);
     hiveConf = new HiveConf();
-    hiveConf.setVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE, MiniHS2.HS2_HTTP_MODE);
+    hiveConf.setVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE, transportMode);
   }
 
   @After
@@ -82,7 +97,7 @@ public class TestJdbWithCustomAuthHttpWithKerberos {
     startMiniHS2();
 
     // JDBC connection to HiveServer2 with Kerberos
-    hs2Conn = DriverManager.getConnection(miniHS2.getJdbcURL());
+    hs2Conn = DriverManager.getConnection(miniHS2.getHttpJdbcURL());
   }
 
   @Test
