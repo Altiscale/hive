@@ -174,9 +174,8 @@ public class ThriftBinaryCLIService extends ThriftCLIService {
           + portNum + " with " + minWorkerThreads + "..." + maxWorkerThreads + " worker threads";
       LOG.info(msg);
 
-      // Add new thread
-      if(!HiveServer2.isHTTPTransportMode(hiveConf)
-          && HiveServer2.isKerberosAuthMode(hiveConf)
+//       Add new thread
+      if (HiveServer2.isKerberosAuthMode(hiveConf)
           && hiveConf.getBoolVar(ConfVars.HIVE_SERVER2_KERBEROS_CUSTOM_AUTH_USED)) {
         Thread t = new Thread(createCustomWithKerberos(this));
         t.start();

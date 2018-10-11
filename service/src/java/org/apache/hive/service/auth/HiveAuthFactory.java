@@ -111,6 +111,13 @@ public class HiveAuthFactory {
     // hadoopAuth is not simple, it does not guarantee it is kerberos
     hadoopAuth = conf.get(HADOOP_SECURITY_AUTHENTICATION, "simple");
 
+
+    // With refactoring of the code to support dual mode "http" and "binary"
+    // SSL always being used in conjunction with http transport mode,
+    // So, the following code need not be refactored as it has explicit of
+    // authTypeStr being checked for nulls. So, with http mode,
+    // authTypeStr will not null
+
     // In http mode we use NOSASL as the default auth type
     if (authTypeStr == null) {
       if ("http".equalsIgnoreCase(transportMode)) {
