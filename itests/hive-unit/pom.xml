@@ -415,26 +415,26 @@
       </dependencies>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>download-spark</id>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <configuration>
-                  <target>
-                    <exec executable="bash" dir="${basedir}" failonerror="true">
-                      <arg line="../target/download.sh"/>
-                    </exec>
-                  </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
+          <!--<plugin>-->
+            <!--<groupId>org.apache.maven.plugins</groupId>-->
+            <!--<artifactId>maven-antrun-plugin</artifactId>-->
+            <!--<executions>-->
+              <!--<execution>-->
+                <!--<id>download-spark</id>-->
+                <!--<phase>generate-sources</phase>-->
+                <!--<goals>-->
+                  <!--<goal>run</goal>-->
+                <!--</goals>-->
+                <!--<configuration>-->
+                  <!--<target>-->
+                    <!--<exec executable="bash" dir="${basedir}" failonerror="true">-->
+                      <!--<arg line="../target/download.sh"/>-->
+                    <!--</exec>-->
+                  <!--</target>-->
+                <!--</configuration>-->
+              <!--</execution>-->
+            <!--</executions>-->
+          <!--</plugin>-->
         </plugins>
       </build>
     </profile>

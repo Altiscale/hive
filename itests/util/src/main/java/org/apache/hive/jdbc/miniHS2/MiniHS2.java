@@ -464,6 +464,18 @@ public class MiniHS2 extends AbstractHiveService {
   }
 
   /**
+   * Build base JDBC URL
+   * @return
+   */
+  public String getBaseHttpJdbcURL() {
+    String transportMode = getConfProperty(ConfVars.HIVE_SERVER2_TRANSPORT_MODE.varname);
+    if(!transportMode.equalsIgnoreCase(HS2_ALL_MODE)) {
+      return getBaseJdbcURL();
+    }
+    return "jdbc:hive2://" + getHost() + ":" + getBinaryPort() + "/";
+  }
+
+  /**
    * Build zk base JDBC URL
    * @return
    */
