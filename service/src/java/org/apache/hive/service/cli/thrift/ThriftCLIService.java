@@ -110,7 +110,6 @@ import com.google.common.base.Joiner;
 public abstract class ThriftCLIService extends AbstractService implements TCLIService.Iface, Runnable {
 
   public static final Logger LOG = LoggerFactory.getLogger(ThriftCLIService.class.getName());
-  private static final String HTTP_TRANSPORT_MODE = "http";
 
   protected CLIService cliService;
   private static final TStatus OK_STATUS = new TStatus(TStatusCode.SUCCESS_STATUS);
