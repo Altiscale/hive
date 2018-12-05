@@ -29,7 +29,7 @@ import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.service.auth.HiveAuthFactory;
 import org.apache.hive.service.cli.CLIService;
-import org.apache.hive.service.HiveTransportMode;
+import org.apache.hadoop.hive.conf.HiveServer2TransportMode;
 import org.apache.hive.service.rpc.thrift.TCLIService;
 import org.apache.hive.service.rpc.thrift.TCLIService.Iface;
 import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup;
@@ -55,8 +55,8 @@ public class ThriftHttpCLIService extends ThriftCLIService {
   }
 
   @Override
-  protected HiveTransportMode getTransportMode() {
-    return HiveTransportMode.http;
+  protected HiveServer2TransportMode getTransportMode() {
+    return HiveServer2TransportMode.http;
   }
 
   /**

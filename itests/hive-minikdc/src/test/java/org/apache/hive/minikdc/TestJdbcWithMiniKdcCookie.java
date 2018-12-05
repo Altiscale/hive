@@ -44,7 +44,7 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class TestJdbcWithMiniKdcCookie {
-  private  static MiniHS2 miniHS2 = null;
+  private static MiniHS2 miniHS2 = null;
   private  MiniHiveKdc miniHiveKdc = null;
   private static Connection hs2Conn;
   File dataFile;

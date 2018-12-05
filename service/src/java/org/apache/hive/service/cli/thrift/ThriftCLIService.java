@@ -38,7 +38,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.shims.HadoopShims.KerberosNameShim;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hive.service.AbstractService;
-import org.apache.hive.service.HiveTransportMode;
+import org.apache.hadoop.hive.conf.HiveServer2TransportMode;
 import org.apache.hive.service.ServiceException;
 import org.apache.hive.service.ServiceUtils;
 import org.apache.hive.service.auth.HiveAuthFactory;
@@ -205,7 +205,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     // Initialize common server configs needed in both binary & http modes
     String portString;
     // HTTP mode
-    if (getTransportMode() == HiveTransportMode.http) {
+    if (getTransportMode() == HiveServer2TransportMode.http) {
       workerKeepAliveTime =
           hiveConf.getTimeVar(ConfVars.HIVE_SERVER2_THRIFT_HTTP_WORKER_KEEPALIVE_TIME,
               TimeUnit.SECONDS);
@@ -414,7 +414,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     String clientIpAddress;
     // Http transport mode.
     // We set the thread local ip address, in ThriftHttpServlet.
-    if (getTransportMode() == HiveTransportMode.http) {
+    if (getTransportMode() == HiveServer2TransportMode.http) {
       clientIpAddress = SessionManager.getIpAddress();
     }
     else {
@@ -464,7 +464,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     }
     // Http transport mode.
     // We set the thread local username, in ThriftHttpServlet.
-    if (getTransportMode() == HiveTransportMode.http) {
+    if (getTransportMode() == HiveServer2TransportMode.http) {
       userName = SessionManager.getUserName();
     }
 
@@ -939,8 +939,8 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
   @Override
   public abstract void run();
 
-  protected HiveTransportMode getTransportMode() {
-    return HiveTransportMode.binary;
+  protected HiveServer2TransportMode getTransportMode() {
+    return HiveServer2TransportMode.binary;
   }
   /**
    * If the proxy user name is provided then check privileges to substitute the user.
@@ -955,7 +955,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     String proxyUser = null;
     // Http transport mode.
     // We set the thread local proxy username, in ThriftHttpServlet.
-    if (getTransportMode()== HiveTransportMode.http) {
+    if (getTransportMode()== HiveServer2TransportMode.http) {
       proxyUser = SessionManager.getProxyUserName();
       LOG.debug("Proxy user from query string: " + proxyUser);
     }

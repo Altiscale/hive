@@ -74,7 +74,7 @@ import org.apache.hive.http.LlapServlet;
 import org.apache.hive.service.CompositeService;
 import org.apache.hive.service.ServiceException;
 import org.apache.hive.service.cli.CLIService;
-import org.apache.hive.service.HiveTransportMode;
+import org.apache.hadoop.hive.conf.HiveServer2TransportMode;
 import org.apache.hive.service.cli.thrift.ThriftBinaryCLIService;
 import org.apache.hive.service.cli.thrift.ThriftCLIService;
 import org.apache.hive.service.cli.thrift.ThriftHttpCLIService;
@@ -250,7 +250,7 @@ public class HiveServer2 extends CompositeService {
     if (transportMode == null) {
       transportMode = hiveConf.getVar(HiveConf.ConfVars.HIVE_SERVER2_TRANSPORT_MODE);
     }
-    if (transportMode != null && (transportMode.equalsIgnoreCase(HiveTransportMode.http.toString()))) {
+    if (transportMode != null && (transportMode.equalsIgnoreCase(HiveServer2TransportMode.http.toString()))) {
       return true;
     }
     return false;
@@ -261,7 +261,7 @@ public class HiveServer2 extends CompositeService {
     if (transportMode == null) {
       transportMode = hiveConf.getVar(HiveConf.ConfVars.HIVE_SERVER2_TRANSPORT_MODE);
     }
-    if (transportMode != null && (transportMode.equalsIgnoreCase(HiveTransportMode.all.toString()))) {
+    if (transportMode != null && (transportMode.equalsIgnoreCase(HiveServer2TransportMode.all.toString()))) {
       return true;
     }
     return false;

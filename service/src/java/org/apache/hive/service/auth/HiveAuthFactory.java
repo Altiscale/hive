@@ -49,7 +49,7 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.ProxyUsers;
 import org.apache.hive.service.cli.HiveSQLException;
-import org.apache.hive.service.HiveTransportMode;
+import org.apache.hadoop.hive.conf.HiveServer2TransportMode;
 import org.apache.hive.service.cli.thrift.ThriftCLIService;
 import org.apache.thrift.TProcessorFactory;
 import org.apache.thrift.transport.TSSLTransportFactory;
@@ -119,7 +119,7 @@ public class HiveAuthFactory {
 
     // In http mode we use NOSASL as the default auth type
     if (authTypeStr == null) {
-      if (HiveTransportMode.http.toString().equalsIgnoreCase(transportMode)) {
+      if (HiveServer2TransportMode.http.toString().equalsIgnoreCase(transportMode)) {
         authTypeStr = AuthTypes.NOSASL.getAuthName();
       } else {
         authTypeStr = AuthTypes.NONE.getAuthName();
