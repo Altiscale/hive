@@ -8,6 +8,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,9 +29,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@RunWith(Parameterized.class)
 public class TestJdbWithCustomAuthWithKerberos {
   private static final Logger LOG = LoggerFactory.getLogger(TestSSL.class);
   private static Integer KERBEROS_CUSTOM_PORT;
@@ -46,6 +51,15 @@ public class TestJdbWithCustomAuthWithKerberos {
   private static HiveConf hiveConf = new HiveConf();
   private Map<String, String> confOverlay;
   private String dataFileDir = hiveConf.get("test.data.files");
+  @Parameterized.Parameter
+  public String transportMode =  null;
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> transportModes() {
+    return Arrays.asList(new Object[][] {
+        { MiniHS2.HS2_BINARY_MODE }, { MiniHS2.HS2_ALL_MODE }
+    });
+  }
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -56,6 +70,7 @@ public class TestJdbWithCustomAuthWithKerberos {
   public void setUp() throws Exception {
     DriverManager.setLoginTimeout(0);
     KERBEROS_CUSTOM_PORT = MetaStoreUtils.findFreePort();
+    hiveConf.setVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE, transportMode);
   }
 
   @After
