@@ -397,7 +397,6 @@ public class HiveServer2 extends CompositeService {
     // Transport specific confs
     boolean isHttpTransportMode = isHTTPTransportMode(hiveConf);
     boolean isAllTransportMode = isAllTransportMode(hiveConf);
-
     if (isHttpTransportMode || isAllTransportMode) {
       confsToPublish.put(ConfVars.HIVE_SERVER2_THRIFT_HTTP_PORT.varname,
           Integer.toString(hiveConf.getIntVar(ConfVars.HIVE_SERVER2_THRIFT_HTTP_PORT)));

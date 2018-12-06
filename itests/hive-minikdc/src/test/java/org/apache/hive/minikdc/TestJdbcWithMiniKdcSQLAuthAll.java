@@ -11,5 +11,4 @@ public class TestJdbcWithMiniKdcSQLAuthAll extends JdbcWithMiniKdcSQLAuthTest {
     hiveConf.setVar(HiveConf.ConfVars.HIVE_SERVER2_TRANSPORT_MODE, MiniHS2.HS2_ALL_MODE);
     JdbcWithMiniKdcSQLAuthTest.beforeTestBase();
   }
-
 }

@@ -36,14 +36,15 @@ public class TestBeelineConnectionUsingHiveSite extends BeelineWithHS2Connection
   @Parameterized.Parameters(name = "{index}: tranportMode={0}")
   public static Collection<Object[]> transportModes() {
     return Arrays.asList(new Object[][] {
-        { MiniHS2.HS2_BINARY_MODE},{ MiniHS2.HS2_HTTP_MODE}, { MiniHS2.HS2_ALL_MODE }
+      { MiniHS2.HS2_BINARY_MODE},{ MiniHS2.HS2_HTTP_MODE},
+      { MiniHS2.HS2_ALL_MODE }
     });
   }
 
   @Test
   public void testBeelineConnectionHttp() throws Exception {
     Assume.assumeTrue(transportMode.equals(MiniHS2.HS2_HTTP_MODE)
-        || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
+      || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
     isHttpModeTest = true;
     setupHs2();
     String path = createDefaultHs2ConnectionFile();
@@ -54,7 +55,7 @@ public class TestBeelineConnectionUsingHiveSite extends BeelineWithHS2Connection
   @Test
   public void testBeelineConnectionSSL() throws Exception {
     Assume.assumeTrue(transportMode.equals(MiniHS2.HS2_BINARY_MODE)
-        || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
+      || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
     setupSSLHs2();
     String path = createDefaultHs2ConnectionFile();
     testBeeLineConnection(path, new String[] { "-e", "show tables;" }, tableName);
@@ -75,7 +76,7 @@ public class TestBeelineConnectionUsingHiveSite extends BeelineWithHS2Connection
   @Test
   public void testBeelineWithNoConnectionFile() throws Exception {
     Assume.assumeTrue(transportMode.equals(MiniHS2.HS2_BINARY_MODE)
-        || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
+      || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
     setupNoAuthHs2();
     testBeeLineConnection(null, new String[] { "-e", "show tables;" }, "no current connection");
   }
@@ -83,11 +84,11 @@ public class TestBeelineConnectionUsingHiveSite extends BeelineWithHS2Connection
   @Test
   public void testBeelineUsingArgs() throws Exception {
     Assume.assumeTrue(transportMode.equals(MiniHS2.HS2_BINARY_MODE)
-        || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
+      || transportMode.equalsIgnoreCase(MiniHS2.HS2_ALL_MODE));
     setupNoAuthHs2();
     String url = miniHS2.getBaseJdbcURL() + "default";
     String args[] = new String[] { "-u", url, "-n", System.getProperty("user.name"), "-p", "foo",
-        "-e", "show tables;" };
+      "-e", "show tables;" };
     testBeeLineConnection(null, args, tableName);
   }
 
@@ -100,9 +101,9 @@ public class TestBeelineConnectionUsingHiveSite extends BeelineWithHS2Connection
   private void setupSSLHs2() throws Exception {
     confOverlay.put(ConfVars.HIVE_SERVER2_USE_SSL.varname, "true");
     confOverlay.put(ConfVars.HIVE_SERVER2_SSL_KEYSTORE_PATH.varname,
-        dataFileDir + File.separator + LOCALHOST_KEY_STORE_NAME);
+      dataFileDir + File.separator + LOCALHOST_KEY_STORE_NAME);
     confOverlay.put(ConfVars.HIVE_SERVER2_SSL_KEYSTORE_PASSWORD.varname,
-        KEY_STORE_TRUST_STORE_PASSWORD);
+      KEY_STORE_TRUST_STORE_PASSWORD);
     miniHS2.start(confOverlay);
     createTable();
     System.setProperty(JAVA_TRUST_STORE_PROP, dataFileDir + File.separator + TRUST_STORE_NAME);

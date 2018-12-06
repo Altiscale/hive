@@ -51,7 +51,6 @@ public class TestThriftCLIServiceWithAllandBinary extends ThriftCLIServiceTest {
     for (Service service : hiveServer2.getServices()) {
       if (service instanceof ThriftBinaryCLIService) {
         return new ThriftCLIServiceClient((ThriftBinaryCLIService) service);
-
       }
       if (service instanceof ThriftHttpCLIService) {
         continue;
@@ -59,5 +58,4 @@ public class TestThriftCLIServiceWithAllandBinary extends ThriftCLIServiceTest {
     }
     throw new IllegalStateException("HiveServer2 not running Thrift service");
   }
-
 }

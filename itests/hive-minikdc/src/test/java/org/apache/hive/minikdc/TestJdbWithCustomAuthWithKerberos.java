@@ -71,7 +71,6 @@ public class TestJdbWithCustomAuthWithKerberos {
     DriverManager.setLoginTimeout(0);
     KERBEROS_CUSTOM_PORT = MetaStoreUtils.findFreePort();
     hiveConf.setVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE, transportMode);
-
   }
 
   @After

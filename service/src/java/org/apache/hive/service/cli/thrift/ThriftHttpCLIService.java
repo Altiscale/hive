@@ -51,7 +51,6 @@ public class ThriftHttpCLIService extends ThriftCLIService {
   public ThriftHttpCLIService(CLIService cliService, Runnable oomHook) {
     super(cliService, ThriftHttpCLIService.class.getSimpleName());
     this.oomHook = oomHook;
-
   }
 
   @Override

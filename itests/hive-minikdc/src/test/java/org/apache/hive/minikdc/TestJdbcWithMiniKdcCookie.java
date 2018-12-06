@@ -45,7 +45,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TestJdbcWithMiniKdcCookie {
   private static MiniHS2 miniHS2 = null;
-  private  MiniHiveKdc miniHiveKdc = null;
+  private MiniHiveKdc miniHiveKdc = null;
   private static Connection hs2Conn;
   File dataFile;
   protected static HiveConf hiveConf = null;
@@ -72,12 +72,12 @@ public class TestJdbcWithMiniKdcCookie {
     hiveConf = new HiveConf();
     hiveConf.setVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE, transportMode);
     System.err.println("Testing using HS2 mode : "
-        + hiveConf.getVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE));
+      + hiveConf.getVar(ConfVars.HIVE_SERVER2_TRANSPORT_MODE));
     hiveConf.setBoolVar(ConfVars.HIVE_SERVER2_THRIFT_HTTP_COOKIE_AUTH_ENABLED,
-        true);
+      true);
     // set a small time unit as cookie max age so that the server sends a 401
     hiveConf.setTimeVar(ConfVars.HIVE_SERVER2_THRIFT_HTTP_COOKIE_MAX_AGE,
-        1, TimeUnit.SECONDS);
+      1, TimeUnit.SECONDS);
     hiveConf.setBoolVar(ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
     startMiniHS2();
   }
