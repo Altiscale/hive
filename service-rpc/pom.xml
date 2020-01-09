@@ -88,7 +88,7 @@
             </goals>
             <configuration>
               <sources>
-                <source>src/gen/thrift/gen-javabean</source>
+                <source>src/generated/thrift/gen-javabean</source>
               </sources>
             </configuration>
           </execution>

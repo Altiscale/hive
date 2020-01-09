@@ -178,7 +178,7 @@
                 <configuration>
                   <target>
                     <property name="protobuf.src.dir"  location="${basedir}/src/protobuf"/>
-                    <property name="protobuf.build.dir"  location="${basedir}/src/gen/protobuf/gen-java"/>
+                    <property name="protobuf.build.dir"  location="${basedir}/src/generated/protobuf/gen-java"/>
                     <echo>Building LLAP Protobuf</echo>
                     <mkdir dir="${protobuf.build.dir}"/>
                     <exec executable="protoc" failonerror="true">
@@ -237,8 +237,8 @@
             </goals>
             <configuration>
               <sources>
-                <source>src/gen/protobuf/gen-java</source>
-                <source>src/gen/thrift/gen-javabean</source>
+                <source>src/generated/protobuf/gen-java</source>
+                <source>src/generated/thrift/gen-javabean</source>
               </sources>
             </configuration>
           </execution>
