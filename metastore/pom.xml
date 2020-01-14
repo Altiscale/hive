@@ -282,7 +282,7 @@
               </execution>
             </executions>
             <configuration>
-              <basedir>${basedir}/src/generated/thrift/gen-javabean/org/apache/hadoop/hive/metastore/api/</basedir>
+              <basedir>${basedir}/src/gen/thrift/gen-javabean/org/apache/hadoop/hive/metastore/api/</basedir>
               <includes>
                 <include>FieldSchema.java</include>
                 <include>Partition.java</include>
@@ -311,7 +311,7 @@
                 <configuration>
                   <target>
                     <property name="protobuf.src.dir"  location="${basedir}/src/protobuf"/>
-                    <property name="protobuf.build.dir"  location="${basedir}/src/generated/protobuf/gen-java"/>
+                    <property name="protobuf.build.dir"  location="${basedir}/src/gen/protobuf/gen-java"/>
                     <echo>Building HBase Metastore Protobuf</echo>
                     <mkdir dir="${protobuf.build.dir}"/>
                     <exec executable="protoc" failonerror="true">
@@ -388,8 +388,8 @@
             <configuration>
               <sources>
                 <source>src/model</source>
-                <source>src/generated/thrift/gen-javabean</source>
-                <source>src/generated/protobuf/gen-java</source>
+                <source>src/gen/thrift/gen-javabean</source>
+                <source>src/gen/protobuf/gen-java</source>
               </sources>
             </configuration>
           </execution>

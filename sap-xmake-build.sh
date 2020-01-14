@@ -1,4 +1,4 @@
- #!/bin/bash -l
+#!/bin/bash -l
 
 # find this script and establish base directory
 SCRIPT_DIR="$( dirname "${BASH_SOURCE[0]}" )"
@@ -96,15 +96,18 @@ cd ${RPM_DIR}
 
 export RPM_NAME="alti-${PACKAGES}-${HIVE_VERSION}"
 echo "TESTE:"
-fpm
+echo ${CONFIG_FILES}
 
 fpm --verbose \
 --maintainer support@altiscale.com \
 --vendor Altiscale \
 --provides ${RPM_NAME} \
---description "$(printf "${RPM_DESCRIPTION}")" \
---url ${GITREPO} \
+--description "${RPM_DESCRIPTION}" \
+--replaces alti-hive_${ARTIFACT_VERSION} \
+--replaces vcc-hive \
+--url "${GITREPO}" \
 --license "Apache License v2" \
+--epoch 1 \
 -s dir \
 -t rpm \
 -n ${RPM_NAME} \
