@@ -4,5 +4,8 @@ branches:
   - Branch: sap-branch-2.3.3-alti
     type: GITHUB_DEV
 
+  - Branch: sap-branch-1.2.1-alti
+    type: GITHUB_DEV
+
   - Pattern: sap-.*
     type: GITHUB_DEV
