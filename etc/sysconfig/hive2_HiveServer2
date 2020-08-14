@@ -1,0 +1,16 @@
+if [ -f /etc/sysconfig/hive2-env.sh ]; then
+  . /etc/sysconfig/hive2-env.sh
+fi
+
+HIVE_CMD=$(which hive)
+HIVE_VERSION=$($HIVE_CMD --version | head -1)
+
+HIVE_PROCESS_DIR=${HIVESERVER2_PROCESS_DIR:-$HIVE_HOME}
+
+HIVE_DAEMON_USER=${HIVESERVER2_DAEMON_USER:-"hiveserver"}
+HIVE_DAEMON_NAME=${HIVESERVER2_DAEMON_NAME:-"hive2_HiveServer2"}
+
+HIVE_DAEMON_OUT=${HIVESERVER2_DAEMON_OUT:-"/tmp/$HIVE_DAEMON_NAME.out"}
+HIVE_DAEMON_PID_FILE=${HIVESERVER2_PID_FILE:-"/tmp/$HIVE_DAEMON_NAME.pid"}
+
+HIVE_DAEMON_CMD=${HIVESERVER2_DAEMON_CMD:-"$HIVE_HOME/bin/hiveserver2"}
