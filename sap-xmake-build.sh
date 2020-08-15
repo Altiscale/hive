@@ -21,7 +21,7 @@ export MAVEN_OPTS="-Xmx3000m"
 #------------------------------------------------------------------------------
 
 #HIVE_VERSION="${HIVE_VERSION:-${XMAKE_PROJECT_VERSION}}"
-HIVE="${HIVE_VERSION:-1.2.1}"
+HIVE_VERSION="${HIVE_VERSION:-1.2.1}"
 export ARTIFACT_VERSION="$HIVE_VERSION"
 
 env
