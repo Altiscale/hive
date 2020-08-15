@@ -35,6 +35,7 @@ if [ "${MVN_IGNORE_TESTFAILURES_BOOL}" != "true" ] ; then
     MVN_IGNORE_TESTFAILURES_BOOL=false
 fi
 
+mvn versions:set -DnewVersion=${HIVE_VERSION}
 # Build hive
 mvn clean install -Pdist \
 -Dmaven.test.skip=true -DskipTests=true \
@@ -122,18 +123,18 @@ opt etc
 mv "${RPM_DIR}${RPM_NAME}-${ALTISCALE_RELEASE}-${DATE_STRING}.x86_64.rpm" "${RPM_DIR}alti-hive-${XMAKE_PROJECT_VERSION}.rpm"
 
 # exporting from shims module
-mv "${MY_DIR}/shims/common/target/hive-shims-common-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shims-common-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/shims/0.20S/target/hive-shims-0.20S-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shims-0.20S-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/shims/0.23/target/hive-shims-0.23-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shims-0.23-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/shims/aggregator/target/hive-shims-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shim-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/shims/scheduler/target/hive-shims-scheduler-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shim-scheduler-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/shims/common/target/hive-shims-common-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shims-common-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/shims/0.20S/target/hive-shims-0.20S-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shims-0.20S-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/shims/0.23/target/hive-shims-0.23-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shims-0.23-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/shims/aggregator/target/hive-shims-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shim-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/shims/scheduler/target/hive-shims-scheduler-${HIVE_VERSION}.jar" "${RPM_DIR}hive-shim-scheduler-${XMAKE_PROJECT_VERSION}.jar"
 
 # exporting other modules
-mv "${MY_DIR}/ant/target/hive-ant-${HIVE_VERSION}.jar" "${RPM_DIR}hive-ant-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/common/target/hive-common-${HIVE_VERSION}.jar" "${RPM_DIR}hive-common-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/contrib/target/hive-contrib-${HIVE_VERSION}.jar" "${RPM_DIR}hive-contrib-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/ql/target/hive-exec-${HIVE_VERSION}.jar" "${RPM_DIR}hive-exec-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/metastore/target/hive-metastore-${HIVE_VERSION}.jar" "${RPM_DIR}hive-metastore-${XMAKE_PROJECT_VERSION}.jar"
-mv "${MY_DIR}/serde/target/hive-serde-${HIVE_VERSION}.jar" "${RPM_DIR}hive-serde-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/ant/target/hive-ant-${HIVE_VERSION}.jar" "${RPM_DIR}hive-ant-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/common/target/hive-common-${HIVE_VERSION}.jar" "${RPM_DIR}hive-common-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/contrib/target/hive-contrib-${HIVE_VERSION}.jar" "${RPM_DIR}hive-contrib-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/ql/target/hive-exec-${HIVE_VERSION}.jar" "${RPM_DIR}hive-exec-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/metastore/target/hive-metastore-${HIVE_VERSION}.jar" "${RPM_DIR}hive-metastore-${XMAKE_PROJECT_VERSION}.jar"
+cp -p "${MY_DIR}/serde/target/hive-serde-${HIVE_VERSION}.jar" "${RPM_DIR}hive-serde-${XMAKE_PROJECT_VERSION}.jar"
 
 exit 0
